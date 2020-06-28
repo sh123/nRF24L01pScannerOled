@@ -24,6 +24,7 @@
 // the nRF24L01+ can tune to 128 channels with 1 MHz spacing from 2.400 GHz to 2.527 GHz.
 #define CHANNELS 128
 #define STARTCHANNEL 0
+#define USE_CHANNELS
 
 // SPI definitions and macros
 #define CE_pin   10 // PB6
@@ -126,7 +127,7 @@ void setup() {
   SSD1X06::start();
   delay(300);
   SSD1X06::fillDisplay(' ');
-  SSD1X06::displayString6x8(1, 0, F("2.4GHz band scanner 4"), 0);
+  SSD1X06::displayString6x8(1, 0, F("2.4GHz band scanner"), 0);
   // prepare 'bit banging' SPI interface
   pinMode(MOSI_pin, OUTPUT);
   pinMode(SCK_pin, OUTPUT);
@@ -160,15 +161,19 @@ void setup() {
     if (!(x % 10)) {
       b |= 0x06; // graduation tick every 10 MHz
     }
-    if (x == 10 || x == 60 || x == 110) {
-      b |= 0xF8; // scale markers at 2.41, 2.46, and 2.51 GHz
+    if (x == 0 || x == 50 || x == 100) {
+      b |= 0xF8; // scale markers at 2.40, 2.45, and 2.50 GHz
     }
     SSD1X06::displayByte(6, x, b);
   }
-  SSD1X06::displayString6x8(7, 0, F("2.41"), 0);
-  SSD1X06::displayString6x8(7, 50, F("2.46"), 0);
-  SSD1X06::displayString6x8(7, 100, F("2.51"), 0);
 
+#ifdef USE_CHANNELS
+  SSD1X06::displayString6x8(7, 4, F("123456789ABCD"), 0);
+  SSD1X06::displayString6x8(7, 100, F("2.50"), 0);
+#else
+  SSD1X06::displayString6x8(7, 0, F("2.40"), 0);
+  SSD1X06::displayString6x8(7, 50, F("2.45"), 0);
+#endif
   SSD1X06::displayString6x8(1, 0, F("                     "), 0); //clear lines with texts so there can't be any orphans on display
   SSD1X06::displayString6x8(3, 0, F("                     "), 0);
   SSD1X06::displayString6x8(5, 0, F("                     "), 0);
