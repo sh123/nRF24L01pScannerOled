@@ -2,23 +2,23 @@
 //
 // ceptimus.  November 2016.
 // Edited by Benik3 January 2019 - added range select, dynamic displaying and async scanning with timer
+// Edited by sh123 June 2020 - modified sketch for use with Arduino Leonardo
 
 #include "SSD1X06.h"
 
 /* nRF24L01+ module connections
 
-   module   Arduino
+   module   Arduino Leonardo
    1 GND ---- GND
    2 VCC ---- 3.3V  Note: 5V on VCC will destroy module (but other pins are 5V tolerant)
-   3 CE ----- D9
-   4 CSN ---- D10
-   5 SCK ---- D13 (SCK)
-   6 MOSI --- D11 (MOSI)
-   7 MISO --- D12 (MISO)
+   3 CE ----- D10
+   4 CSN ---- D11
+   5 SCK ---- D15 (SCK)
+   6 MOSI --- D16 (MOSI)
+   7 MISO --- D14 (MISO)
    8 IRQ ---- not connected
 */
 
-#define rstPin 4  //OLED reset pin
 //I2C is "overclocked" to get faster refresh rates. See define in SSD1X06.h
 
 // the nRF24L01+ can tune to 128 channels with 1 MHz spacing from 2.400 GHz to 2.527 GHz.
@@ -26,21 +26,21 @@
 #define STARTCHANNEL 0
 
 // SPI definitions and macros
-#define CE_pin    9
-#define CS_pin   10
-#define MOSI_pin 11
-#define MISO_pin 12
-#define SCK_pin  13
+#define CE_pin   10 // PB6
+#define CS_pin   11 // PB7
+#define MOSI_pin 16 // PB2
+#define MISO_pin 14 // PB3
+#define SCK_pin  15 // PB1
 
-#define  CE_on    PORTB |= 0x02
-#define  CE_off   PORTB &= 0xFD
-#define  CS_on    PORTB |= 0x04
-#define  CS_off   PORTB &= 0xFB
-#define  MOSI_on  PORTB |= 0x08
-#define  MOSI_off PORTB &= 0xF7
-#define  MISO_on  (PINB & 0x10)  // input
-#define  SCK_on   PORTB |= 0x20
-#define  SCK_off  PORTB &= 0xDF
+#define  CE_on    PORTB |= B01000000 // PB6
+#define  CE_off   PORTB &= B10111111
+#define  CS_on    PORTB |= B10000000 // PB7
+#define  CS_off   PORTB &= B01111111
+#define  MOSI_on  PORTB |= B00000100 // PB2
+#define  MOSI_off PORTB &= B11111011
+#define  MISO_on  (PINB & B00001000) // PB3
+#define  SCK_on   PORTB |= B00000010 // PB1
+#define  SCK_off  PORTB &= B11111101
 
 // nRF24 Register map
 enum {
@@ -123,16 +123,10 @@ uint8_t b = 0;
 const uint8_t ff[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 void setup() {
-  pinMode(rstPin, OUTPUT);  // Set RST pin as OUTPUT
-  digitalWrite(rstPin, LOW);  // Bring RST low, reset the display
-  delay(10);  // wait 10ms
-  digitalWrite(rstPin, HIGH); // Set RST HIGH, bring out of reset
   SSD1X06::start();
   delay(300);
   SSD1X06::fillDisplay(' ');
   SSD1X06::displayString6x8(1, 0, F("2.4GHz band scanner 4"), 0);
-  SSD1X06::displayString6x8(3, 0, F("By ceptimus. Nov '16"), 0);
-  SSD1X06::displayString6x8(5, 0, F("Mod by Benik3 Jan '19"), 0);
   // prepare 'bit banging' SPI interface
   pinMode(MOSI_pin, OUTPUT);
   pinMode(SCK_pin, OUTPUT);
